@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tabuleiro de Física Moderna e Contemporânea</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f8fafc;
+      --accent-color: #38bdf8;
+
+      /* Paleta Arco-Íris das Etapas */
+      --etapa1-color: #ef4444; /* Vermelho */
+      --etapa2-color: #f97316; /* Laranja */
+      --etapa3-color: #eab308; /* Amarelo */
+      --etapa4-color: #22c55e; /* Verde */
+      --etapa5-color: #3b82f6; /* Azul */
+      --etapa6-color: #a855f7; /* Roxo */
+
+      /* Pinos dos Jogadores */
+      --p1-color: #60a5fa;
+      --p2-color: #f87171;
+      --p3-color: #4ade80;
+      --p4-color: #facc15;
+      --p5-color: #c084fc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 15px;
+    }
+
+    h1 {
+      color: var(--accent-color);
+      margin-bottom: 5px;
+      text-align: center;
+      font-size: 1.8rem;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+
+    /* Tela Inicial */
+    #setup-screen {
+      background-color: var(--card-bg);
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 480px;
+      width: 100%;
+      margin-top: 30px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    .player-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 20px 0;
+      text-align: left;
+    }
+
+    .player-input-item { display: flex; align-items: center; gap: 10px; }
+    .player-input-item input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background-color: #0f172a;
+      color: #fff;
+    }
+
+    .btn-main {
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      color: #0f172a;
+      font-weight: bold;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 15px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-main:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+    .btn-main:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* Container Principal */
+    #game-layout {
+      display: none;
+      gap: 20px;
+      max-width: 1400px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    /* Tabuleiro em Trilha S (Serpenteante 4 linhas x 6 colunas) */
+    #board-container {
+      flex: 2.2;
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      position: relative;
+    }
+
+    .tile {
+      background-color: #1e293b;
+      border-radius: 10px;
+      min-height: 105px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      border: 3px solid transparent;
+      font-size: 0.75rem;
+      transition: all 0.3s ease;
+      z-index: 2;
+    }
+
+    .tile-number { font-weight: bold; color: #f8fafc; font-size: 0.85rem; }
+    .tile-label { font-size: 0.65rem; text-align: center; font-weight: 600; color: #fff; line-height: 1.1; }
+
+    /* Cores das Etapas do Arco-Íris com Gradiente */
+    .tile.e1 { border-color: var(--etapa1-color); background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(30, 41, 59, 0.8) 100%); }
+    .tile.e2 { border-color: var(--etapa2-color); background: linear-gradient(135deg, rgba(249, 115, 22, 0.3) 0%, rgba(30, 41, 59, 0.8) 100%); }
+    .tile.e3 { border-color: var(--etapa3-color); background: linear-gradient(135deg, rgba(234, 179, 8, 0.3) 0%, rgba(30, 41, 59, 0.8) 100%); }
+    .tile.e4 { border-color: var(--etapa4-color); background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(30, 41, 59, 0.8) 100%); }
+    .tile.e5 { border-color: var(--etapa5-color); background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(30, 41, 59, 0.8) 100%); }
+    .tile.e6 { border-color: var(--etapa6-color); background: linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(30, 41, 59, 0.8) 100%); }
+
+    /* Ilustrações de Física decorativas */
+    .physics-icon {
+      position: absolute;
+      font-size: 1.4rem;
+      opacity: 0.25;
+      right: 6px;
+      bottom: 6px;
+      pointer-events: none;
+    }
+
+    /* Casa de Destino do Dado */
+    .tile.tile-target {
+      border: 4px solid #38bdf8 !important;
+      box-shadow: 0 0 20px #38bdf8, inset 0 0 15px rgba(56, 189, 248, 0.5);
+      animation: pulse-target 1.2s infinite alternate;
+      z-index: 10;
+    }
+
+    @keyframes pulse-target {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.06); }
+    }
+
+    /* Casas Especiais */
+    .tile.wait { background: rgba(120, 53, 15, 0.85) !important; }
+    .tile.back { background: rgba(131, 24, 67, 0.85) !important; }
+    .tile.blackhole { border-color: #000 !important; background: #000 !important; color: #ef4444; }
+
+    .pin-container { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .pin {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      transition: all 0.3s;
+    }
+    .pin.p1 { background-color: var(--p1-color); }
+    .pin.p2 { background-color: var(--p2-color); }
+    .pin.p3 { background-color: var(--p3-color); }
+    .pin.p4 { background-color: var(--p4-color); }
+    .pin.p5 { background-color: var(--p5-color); }
+
+    .pin.winner-anim {
+      animation: winner-bounce 0.8s infinite alternate ease-in-out;
+      box-shadow: 0 0 12px #facc15, 0 0 20px #facc15;
+    }
+
+    @keyframes winner-bounce {
+      0% { transform: translateY(0) scale(1) rotate(0deg); }
+      100% { transform: translateY(-12px) scale(1.5) rotate(360deg); }
+    }
+
+    #control-panel {
+      flex: 1;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    .status-card {
+      background-color: #0f172a;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 5px solid var(--accent-color);
+    }
+
+    #dice-section {
+      text-align: center;
+      padding: 15px;
+      background-color: #334155;
+      border-radius: 8px;
+    }
+
+    #dice-result {
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: var(--accent-color);
+      margin: 4px 0;
+      display: inline-block;
+    }
+
+    .rolling { animation: spin-dice 0.15s infinite linear; }
+    @keyframes spin-dice {
+      0% { transform: rotate(0deg) scale(1.1); }
+      50% { transform: rotate(180deg) scale(1.3); }
+      100% { transform: rotate(360deg) scale(1.1); }
+    }
+
+    #question-card {
+      display: none;
+      background-color: #0f172a;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid var(--accent-color);
+    }
+
+    .option-btn {
+      display: block;
+      width: 100%;
+      background-color: #334155;
+      color: white;
+      border: none;
+      padding: 8px 10px;
+      margin-top: 6px;
+      border-radius: 6px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.8rem;
+      line-height: 1.2;
+      transition: background-color 0.2s;
+    }
+    .option-btn:hover { background-color: #475569; }
+
+    .player-list { display: flex; flex-direction: column; gap: 5px; font-size: 0.85rem; }
+    .player-item { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 4px; }
+    .player-item.active { background-color: #334155; font-weight: bold; }
+    .player-item.eliminated { text-decoration: line-through; opacity: 0.4; }
+
+    select {
+      padding: 8px;
+      border-radius: 6px;
+      background-color: #334155;
+      color: white;
+      border: none;
+      font-size: 1rem;
+      margin: 10px 0;
+    }
+
+    #victory-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(15, 23, 42, 0.9);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .victory-box {
+      background: #1e293b;
+      padding: 40px;
+      border-radius: 16px;
+      text-align: center;
+      border: 2px solid #facc15;
+      box-shadow: 0 0 30px rgba(250, 204, 21, 0.4);
+      animation: pop-modal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes pop-modal {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎲 Tabuleiro de Física Moderna e Contemporânea</h1>
+
+  <!-- Tela Inicial -->
+  <div id="setup-screen">
+    <h2>Configuração da Partida</h2>
+    <p style="margin-top: 10px; color: #94a3b8;">Escolha o número de jogadores:</p>
+    <select id="num-players" onchange="renderNameInputs()">
+      <option value="2">2 Jogadores</option>
+      <option value="3">3 Jogadores</option>
+      <option value="4">4 Jogadores</option>
+      <option value="5" selected>5 Jogadores</option>
+    </select>
+
+    <div class="player-input-group" id="player-inputs-container"></div>
+
+    <button class="btn-main" onclick="startGame()">Iniciar Partida</button>
+  </div>
+
+  <!-- Modal de Vitória -->
+  <div id="victory-modal">
+    <div class="victory-box">
+      <h1 style="font-size: 3rem; margin-bottom: 10px;">🏆</h1>
+      <h2 style="color: #facc15; font-size: 1.8rem;" id="winner-title">JOGADOR VENCEU!</h2>
+      <p style="margin: 15px 0; color: #94a3b8;">Parabéns por dominar a jornada da Física Moderna!</p>
+      <button class="btn-main" onclick="location.reload()">Jogar Novamente</button>
+    </div>
+  </div>
+
+  <div id="game-layout">
+    <div id="board-container"></div>
+
+    <!-- Painel Lateral de Controle (Sem Legenda) -->
+    <div id="control-panel">
+      <div class="status-card">
+        <h3 style="margin-bottom: 6px; color: var(--accent-color);">Jogadores</h3>
+        <div class="player-list" id="player-list-display"></div>
+      </div>
+
+      <div id="dice-section">
+        <h3>Vez de: <span id="current-player-name" style="color: var(--accent-color);">Jogador 1</span></h3>
+        <div id="dice-result">🎲</div>
+        <button class="btn-main" id="roll-btn" onclick="rollDice()">Rolar Dado</button>
+      </div>
+
+      <div id="question-card">
+        <span id="question-etapa" style="font-size: 0.72rem; color: var(--accent-color); font-weight: bold;">ETAPA</span>
+        <p id="question-text" style="font-size: 0.82rem; margin: 6px 0; line-height: 1.25;"></p>
+        <div id="options-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const NOMES_ETAPAS = {
+      1: "Física clássica e seus limites",
+      2: "A origem da Física Quântica",
+      3: "Relatividade e universo",
+      4: "Dualidade e mecânica quântica",
+      5: "Núcleo, partículas e sociedade",
+      6: "Matéria em novas escalas"
+    };
+
+    const ICONES_FISICA = {
+      0: "⚡", 1: "💡", 2: "🦴", 3: "⚛️", 4: "🕳️", 5: "☀️",
+      6: "⬅️", 7: "🪐", 8: "🚀", 9: "⏸️", 10: "🌙", 11: "🌌",
+      12: "🌊", 13: "⬅️", 14: "🕳️", 15: "🐱", 16: "💥", 17: "⏸️",
+      18: "⚛️", 19: "⬅️", 20: "🔬", 21: "❄️", 22: "🌀", 23: "🏆"
+    };
+
+    const boardLayout = [
+      { id: 0, row: 0, col: 0, type: 'start', eClass: 'e1', label: 'Início', etapaNum: 1 },
+      { id: 1, row: 0, col: 1, type: 'normal', eClass: 'e1', label: NOMES_ETAPAS[1], etapaNum: 1 },
+      { id: 2, row: 0, col: 2, type: 'wait', eClass: 'e1', label: '⏸️ Parado 1 turn', etapaNum: 1 },
+      { id: 3, row: 0, col: 3, type: 'normal', eClass: 'e1', label: NOMES_ETAPAS[1], etapaNum: 1 },
+      { id: 4, row: 0, col: 4, type: 'blackhole', eClass: 'e2', label: '🕳️ Buraco Negro', etapaNum: 2 },
+      { id: 5, row: 0, col: 5, type: 'normal', eClass: 'e2', label: NOMES_ETAPAS[2], etapaNum: 2 },
+      
+      { id: 6, row: 1, col: 5, type: 'back', eClass: 'e2', label: '⬅️ Volte 2', etapaNum: 2 },
+      { id: 7, row: 1, col: 4, type: 'normal', eClass: 'e2', label: NOMES_ETAPAS[2], etapaNum: 2 },
+      { id: 8, row: 1, col: 3, type: 'normal', eClass: 'e3', label: NOMES_ETAPAS[3], etapaNum: 3 },
+      { id: 9, row: 1, col: 2, type: 'wait', eClass: 'e3', label: '⏸️ Parado 1 turn', etapaNum: 3 },
+      { id: 10, row: 1, col: 1, type: 'normal', eClass: 'e3', label: NOMES_ETAPAS[3], etapaNum: 3 },
+      { id: 11, row: 1, col: 0, type: 'normal', eClass: 'e3', label: NOMES_ETAPAS[3], etapaNum: 3 },
+
+      { id: 12, row: 2, col: 0, type: 'normal', eClass: 'e4', label: NOMES_ETAPAS[4], etapaNum: 4 },
+      { id: 13, row: 2, col: 1, type: 'back', eClass: 'e4', label: '⬅️ Volte 2', etapaNum: 4 },
+      { id: 14, row: 2, col: 2, type: 'blackhole', eClass: 'e4', label: '🕳️ Buraco Negro', etapaNum: 4 },
+      { id: 15, row: 2, col: 3, type: 'normal', eClass: 'e4', label: NOMES_ETAPAS[4], etapaNum: 4 },
+      { id: 16, row: 2, col: 4, type: 'normal', eClass: 'e5', label: NOMES_ETAPAS[5], etapaNum: 5 },
+      { id: 17, row: 2, col: 5, type: 'wait', eClass: 'e5', label: '⏸️ Parado 1 turn', etapaNum: 5 },
+
+      { id: 18, row: 3, col: 5, type: 'normal', eClass: 'e5', label: NOMES_ETAPAS[5], etapaNum: 5 },
+      { id: 19, row: 3, col: 4, type: 'back', eClass: 'e5', label: '⬅️ Volte 2', etapaNum: 5 },
+      { id: 20, row: 3, col: 3, type: 'normal', eClass: 'e6', label: NOMES_ETAPAS[6], etapaNum: 6 },
+      { id: 21, row: 3, col: 2, type: 'normal', eClass: 'e6', label: NOMES_ETAPAS[6], etapaNum: 6 },
+      { id: 22, row: 3, col: 1, type: 'normal', eClass: 'e6', label: NOMES_ETAPAS[6], etapaNum: 6 },
+      { id: 23, row: 3, col: 0, type: 'finish', eClass: 'e6', label: '🏆 Chegada!', etapaNum: 6 }
+    ];
+
+    const questionsByTile = {
+      0: [
+        { q: "Maxwell (1864) unificou quais fenômenos em suas equações?", opts: ["Eletricidade, magnetismo e luz", "Gravidade, força forte e fraca", "Termodinâmica e expansão dos gases", "Acústica e mecânica celeste"], ans: 0 },
+        { q: "Qual a natureza da luz provada pela síntese eletromagnética de Maxwell?", opts: ["Onda mecânica sonora", "Onda eletromagnética", "Fluxo contínuo de prótons", "Onda gravitacional do vácuo"], ans: 1 },
+        { q: "No século XIX, qual teoria unificou os campos elétricos e magnéticos?", opts: ["Teoria da Relatividade Especial", "Síntese Eletromagnética de Maxwell", "Termodinâmica Estatística", "Mecânica Quântica Matricial"], ans: 1 },
+        { q: "Qual velocidade teórica Maxwell calculou a partir de constantes elétricas e magnéticas?", opts: ["Velocidade do som no ar", "Velocidade da luz no vácuo", "Velocidade de escape da Terra", "Velocidade média dos elétrons"], ans: 1 },
+        { q: "As equações de Maxwell reforçaram a capacidade unificadora de qual ramo?", opts: ["Física Clássica", "Mecânica Quântica", "Física Nuclear de Partículas", "Óptica Quântica"], ans: 0 },
+        { q: "Como as equações de Maxwell descreveram a luz no século XIX?", opts: ["Como uma onda eletromagnética contínua", "Como partículas maciças neutras", "Como um fluido gravitacional denso", "Como quanta rígidos de energia"], ans: 0 }
+      ],
+      1: [
+        { q: "No efeito fotoelétrico (Hertz, 1887), a emissão de elétrons dependia de qual grandeza da luz?", opts: ["Apenas da intensidade do brilho", "De uma frequência mínima da luz", "Do tempo prolongado de exposição", "Da temperatura do ambiente"], ans: 1 },
+        { q: "Pela Física Clássica, o que deveria acontecer ao aumentar a intensidade da luz no efeito fotoelétrico?", opts: ["Deveria arrancar elétrons independente da frequência", "Nunca arrancaria nenhum elétron", "Aumentaria o peso do material metálico", "Alteraria a velocidade do som no metal"], ans: 0 },
+        { q: "O que surpreendeu os físicos no experimento de Hertz em 1887?", opts: ["A emissão de elétrons ser imediata e depender da frequência", "A luz parar de propagar no vácuo", "Os elétrons mudarem para carga positiva", "O metal derreter instantaneamente sem emitir luz"], ans: 0 },
+        { q: "A descrição clássica da luz tratava a radiação puramente como:", opts: ["Uma onda contínua", "Fótons discretos quantizados", "Partículas maciças e rígidas", "Feixes atômicos condutores"], ans: 0 },
+        { q: "A falha em explicar a ejeção de elétrons pela intensidade exigiu o quê?", opts: ["Uma nova explicação (a Física Quântica)", "Abandonar o estudo do eletromagnetismo", "Descartar as leis da gravitação de Newton", "Aumentar a pressão do ar nos aparelhos"], ans: 0 },
+        { q: "Em relação ao tempo, a emissão fotoelétrica observada experimentalmente por Hertz era:", opts: ["Praticamente imediata", "Necessitava de horas de aquecimento", "Ocorria em intervalos fixos de 1 hora", "Ocorria apenas no escuro absoluto"], ans: 0 }
+      ],
+      2: [
+        { q: "Como os Raios X (Röntgen, 1895) conseguem criar imagens internas do corpo?", opts: ["Tecidos densos absorvem mais raios X do que tecidos moles", "Refletem luz visível na superfície da pele", "Aquecem o sangue até emitir luminescência", "Dilatam os ossos temporariamente"], ans: 0 },
+        { q: "Quem descobriu os Raios X em 1895?", opts: ["Wilhelm Röntgen", "Henri Becquerel", "J.J. Thomson", "Ernest Rutherford"], ans: 0 },
+        { q: "A radioatividade (Becquerel, 1896) provou que o átomo...", opts: ["Tinha estrutura interna e não era indivisível", "Era indivisível e permanente", "Não continha nenhuma massa", "Era composto apenas por luz concentrada"], ans: 0 },
+        { q: "A emissão espontânea de partículas que transforma um núcleo em outro chama-se:", opts: ["Radioatividade", "Refração óptica", "Efeito Joule", "Condução térmica"], ans: 0 },
+        { q: "Qual descoberta de Thomson em 1897 revelou uma partícula subatômica?", opts: ["Elétron", "Nêutron", "Quark", "Pósitron"], ans: 0 },
+        { q: "Por que os ossos aparecem claros no filme do raio X?", opts: ["Absorvem mais a radiação por serem densos", "Emitem luz própria ao contato", "Refletem totalmente os elétrons", "Convertem os raios X em calor visível"], ans: 0 }
+      ],
+      3: [
+        { q: "Qual consequência a descoberta do elétron trouxe para o modelo atômico?", opts: ["Fez surgir modelos com componentes e cargas internas", "Manteve a ideia de esfera maciça indivisível", "Proibiu a existência de cargas negativas", "Provou que o átomo não tinha carga elétrica"], ans: 0 },
+        { q: "Becquerel descobriu a radioatividade ao estudar sais de qual elemento?", opts: ["Urânio", "Cobre", "Ouro", "Sódio"], ans: 0 },
+        { q: "Röntgen registrou pela primeira vez imagens de raios X usando o quê?", opts: ["Filme ou detector digital", "Espelhos côncavos de vidro", "Lentes de água purificada", "Prismas de quartzo"], ans: 0 },
+        { q: "A Física Clássica no final do século XIX encontrou seus limites em fenômenos...", opts: ["Microscópicos e atômicos", "Planetários de grande escala", "Mecânicos de alavancas simples", "Fluidoestáticos de navios"], ans: 0 },
+        { q: "Qual modelo de átomo caducou com as descobertas de Thomson e Becquerel?", opts: ["Modelo do átomo indivisível e imutável", "Modelo planetário de Bohr", "Modelo quântico de nuvem", "Modelo nuclear com nêutrons"], ans: 0 },
+        { q: "O descobrimento do elétron mostrou que o átomo neutro precisava organizar o quê?", opts: ["Cargas positivas e negativas internas", "Apenas partículas sem carga", "Anéis de fótons visíveis", "Camadas puramente gravitacionais"], ans: 0 }
+      ],
+      4: [
+        { q: "O que era a 'catástrofe do ultravioleta'?", opts: ["Previsão clássica de emissão infinita de energia em altas frequências", "A destruição da camada de ozônio em 1900", "A falta de luz ultravioleta emitida pelo Sol", "A reflexão total da luz no espaço intergaláctico"], ans: 0 },
+        { q: "Como Planck (1900) resolveu o problema do corpo negro?", opts: ["Propondo que a energia é emitida/absorvida em quanta discretos", "Aumentando a temperatura teórica ao infinito", "Ignorando a frequência da radiação emitida", "Convertendo a luz em energia magnética contínua"], ans: 0 },
+        { q: "Qual constante fundamental foi introduzida por Max Planck em 1900?", opts: ["Constante h de Planck", "Constante gravitacional G", "Carga elementar do elétron e", "Velocidade c da luz"], ans: 0 },
+        { q: "A proposta dos 'quanta' por Planck em 1900 inaugurou o quê?", opts: ["A Física Quântica", "A Teoria da Gravitação Universal", "A Óptica Geométrica Clássica", "A Física de Fluidos Viscosos"], ans: 0 },
+        { q: "Na previsão clássica, a energia do corpo negro tenderia ao infinito em qual região?", opts: ["Frequências altas (ultravioleta)", "Frequências baixas (infravermelho)", "Ondas de rádio longas", "Micro-ondas de baixa energia"], ans: 0 },
+        { q: "A ruptura de Planck com a física clássica deu-se ao substituir a descrição contínua por:", opts: ["Quantidades discretas (quanta)", "Fluxo mecânico infinito", "Ondas gravitacionais contínuas", "Flutuações do éter"], ans: 0 }
+      ],
+      5: [
+        { q: "Einstein (1905) explicou o efeito fotoelétrico usando qual conceito?", opts: ["Fótons com energia hf proporcional à frequência", "Ondas de pressão mecânica contínua", "Dilatação temporal da luz visível", "Atração gravítica de elétrons"], ans: 0 },
+        { q: "O que é a 'função trabalho' de um material no efeito fotoelétrico?", opts: ["A energia mínima para arrancar um elétron da superfície", "O calor necessário para derreter o metal", "A voltagem gerada por um fóton no vácuo", "A resistência elétrica interna do material"], ans: 0 },
+        { q: "O aumento da INTENSIDADE da luz no efeito fotoelétrico aumenta o quê?", opts: ["O número de fótons e elétrons emitidos", "A energia individual de cada fóton", "A frequência de corte do metal", "A massa de repouso dos elétrons"], ans: 0 },
+        { q: "O que acontece se a frequência da luz for menor que a frequência de corte?", opts: ["Nenhum elétron é ejetado, mesmo com alta intensidade", "Elétrons saem muito devagar após horas", "O metal derrete instantaneamente", "Emitem-se apenas prótons"], ans: 0 },
+        { q: "Por qual explicação Einstein recebeu o Prêmio Nobel de Física?", opts: ["Explicação do Efeito Fotoelétrico", "Teoria da Relatividade Geral", "Descobrimento do Nêutron", "Desenvolvimento da Bomba Atômica"], ans: 0 },
+        { q: "A energia de cada fóton incidente é determinada por qual relação?", opts: ["E = hf (energia proporcional à frequência)", "E = mc² puramente", "E = F / d (Força por distância)", "E = PV (Pressão por volume)"], ans: 0 }
+      ],
+      6: [
+        { q: "O que mostrou o experimento de espalhamento de Rutherford (1911)?", opts: ["O átomo tem um núcleo denso e positivo, sendo muito espaço vazio", "O átomo é maciço e homogêneo como bilhar", "Os elétrons ficam fixos dentro do núcleo", "O átomo é formado apenas por nêutrons neutros"], ans: 0 },
+        { q: "Quais partículas foram disparadas contra a lâmina de ouro no experimento de Rutherford?", opts: ["Partículas Alfa", "Nêutrons lentos", "Raios Laser de Alta Potência", "Pósitrons livres"], ans: 0 },
+        { q: "Por que Rutherford abandonou o modelo de Thomson?", opts: ["Porque algumas partículas alfa sofreram fortes desvios centrais", "Porque o átomo pegou fogo durante o teste", "Porque os elétrons desintegraram no ar", "Porque a lâmina de ouro derreteu sem motivo"], ans: 0 },
+        { q: "No modelo de Rutherford, onde fica concentrada quase toda a massa do átomo?", opts: ["No núcleo central", "Na eletrosfera vazia", "Dividida por igual em todo espaço", "Nos fótons de valência"], ans: 0 },
+        { q: "A maior parte das partículas alfa atravessou a lâmina sem desvio porque...", opts: ["O átomo é majoritariamente espaço vazio", "A lâmina era transparente à luz", "As partículas não tinham massa", "Os elétrons atraíram as partículas alfa"], ans: 0 },
+        { q: "Qual a carga elétrica concentrada no núcleo no modelo de Rutherford?", opts: ["Positiva", "Negativa", "Totalmente neutra", "Variável a cada segundo"], ans: 0 }
+      ],
+      7: [
+        { q: "Como o modelo de Bohr (1913) explica as linhas espectrais?", opts: ["Elétrons transmitem fótons de energia igual à diferença entre níveis discretos", "Elétrons colidem e liberam calor contínuo", "Prótons orbitam fora do átomo em retas", "Fótons são destruídos na eletrosfera"], ans: 0 },
+        { q: "No modelo de Bohr, o que acontece quando um elétron salta para um nível de menor energia?", opts: ["Emite um fóton de frequência específica", "Absorve um elétron da vizinhança", "Destrói o núcleo atômico", "Transforma-se em nêutron"], ans: 0 },
+        { q: "Como são as órbitas permitidas para os elétrons no modelo de Bohr?", opts: ["Possuem níveis de energia discretos/quantizados", "Qualquer raio é permitido continuamente", "Órbitas retas em espiral desordenada", "Órbitas quadradas fora do núcleo"], ans: 0 },
+        { q: "Cada elemento químico possui linhas espectrais características porque...", opts: ["Suas diferenças de energia entre níveis são específicas", "Todos os átomos do universo são idênticos", "A luz do Sol muda para cada elemento", "Os nêutrons emitem luz visível"], ans: 0 },
+        { q: "Bohr aplicou com sucesso seu modelo inicialmente para qual átomo?", opts: ["Átomo de Hidrogênio", "Átomo de Urânio", "Átomo de Ferro", "Átomo de Cobre"], ans: 0 },
+        { q: "Se um elétron passa de um nível interno para um nível mais externo no átomo de Bohr, ele:", opts: ["Absorve um fóton de energia específica", "Emite luz visível verde", "Perde sua carga elétrica", "Destrói sua massa"], ans: 0 }
+      ],
+      8: [
+        { q: "Na Relatividade Especial (Einstein, 1905), qual grandeza é constante para todos os observadores inerciais?", opts: ["Velocidade da luz no vácuo", "Intervalo de tempo entre eventos", "Comprimento dos objetos em movimento", "Energia cinética dos corpos"], ans: 0 },
+        { q: "O que acontece com o tempo para um objeto em altíssima velocidade relativa?", opts: ["Sofre dilatação temporal (passa mais devagar)", "Acelera infinitamente sem parar", "Para de existir completamente", "Inverte a direção do passado"], ans: 0 },
+        { q: "O conceito de simultaneidade na Relatividade Especial indica que...", opts: ["Eventos simultâneos para um observador podem não ser para outro", "O tempo é absoluto em todo universo", "O passado e o futuro ocorrem juntos no mesmo ponto", "A velocidade da luz depende da fonte"], ans: 0 },
+        { q: "O que substitui as ideias de espaço e tempo absolutos na Física moderna?", opts: ["O contínuo Espaço-Tempo quadridimensional", "A gravidade de Newton", "O éter luminífero estacionário", "O modelo geocêntrico das esferas"], ans: 0 },
+        { q: "A famosa equação E = mc² expressa a equivalência entre o quê?", opts: ["Massa e energia", "Velocidade e carga elétrica", "Força e tempo", "Temperatura e momento"], ans: 0 },
+        { q: "O que ocorre com a medida do comprimento de um objeto no sentido do seu movimento rápido?", opts: ["Sofre contração espacial", "Expande ao dobro do tamanho", "Permanece estritamente inalterada", "Gira 90 graus no vácuo"], ans: 0 }
+      ],
+      9: [
+        { q: "Na Relatividade Geral (1915), como a gravidade é interpretada?", opts: ["Como curvatura da geometria do espaço-tempo causada por massa/energia", "Como força atrativa instantânea à distância", "Como pressão do vácuo térmico", "Como campo magnético de alta voltagem"], ans: 0 },
+        { q: "O que faz a luz desviar de sua trajetória ao passar perto de um corpo massivo?", opts: ["A geometria curva do espaço-tempo criada pela massa", "A atração magnética dos fótons pelo centro do Sol", "O atrito com a atmosfera do corpo", "A perda de velocidade da luz"], ans: 0 },
+        { q: "Como o eclipse solar total de 1919 testou a Relatividade Geral?", opts: ["Comparando a posição aparente de estrelas próximas ao disco solar", "Medindo a temperatura da Lua", "Calculando a massa do Sol com balanças", "Medindo a velocidade dos raios gama"], ans: 0 },
+        { q: "Onde ocorreu a expedição britânica crucial para comprovar a teoria de Einstein em 1919?", opts: ["Sobral (Brasil) e Ilha de Príncipe", "Paris e Londres", "Nova York e Tóquio", "Moscou e Berlim"], ans: 0 },
+        { q: "Corpos e luz em um campo gravitacional movem-se seguindo o quê?", opts: ["Geodésicas no espaço-tempo curvo", "Linhas retas da geometria euclidiana", "Círculos perfeitos em torno do núcleo", "Parábolas aceleradas contínuas"], ans: 0 },
+        { q: "Durante o eclipse de 1919, o bloqueio do disco solar permitiu observar o quê?", opts: ["Estrelas cujos raios luminosos passaram perto do Sol", "O surgimento de novos planetas quânticos", "A destruição da corona solar", "A atração eletrostática do eclipse"], ans: 0 }
+      ],
+      10: [
+        { q: "Qual descoberta de 1965 é interpretada como remanescente térmico do Big Bang?", opts: ["Radiação cósmica de fundo em micro-ondas", "Descobrimento de Netuno", "Radiação alfa solar contínua", "Luz ultravioleta galáctica"], ans: 0 },
+        { q: "Quem descobriu acidentalmente a radiação cósmica de fundo em 1965?", opts: ["Penzias e Wilson", "Einstein e Bohr", "Hubble e Hawking", "Maxwell e Hertz"], ans: 0 },
+        { q: "Além da radiação de fundo, que outra observação sustenta a expansão do universo?", opts: ["Afastamento (redshift) das galáxias distantes", "A rotação fixa da Terra", "A abundância de ferro nas estrelas", "A atração magnética da Lua"], ans: 0 },
+        { q: "Em que faixa do espectro eletromagnético é detectada a radiação cósmica de fundo?", opts: ["Micro-ondas", "Raios X", "Luz verde visível", "Ondas ultrassônicas"], ans: 0 },
+        { q: "Os modelos cosmológicos atuais indicam que o universo teve origem em...", opts: ["Um estado primordial denso e quente (Big Bang)", "Um estado frio e estático sem fim", "Uma fusão de três galáxias maduras", "Uma colisão de dois elétrons livres"], ans: 0 },
+        { q: "A radiação cósmica de fundo é observada em quais direções do céu?", opts: ["Em praticamente todas as direções de forma uniforme", "Apenas na direção do centro da Via Láctea", "Somente nos polos terrestres", "Apenas no equador astronômico"], ans: 0 }
+      ],
+      11: [
+        { q: "O que gera Ondas Gravitacionais previstas por Einstein em 1916 e detectadas em 2015?", opts: ["Sistemas com massas aceleradas, como fusão de buracos negros", "O brilho contínuo de estrelas anãs", "Explosões de lâmpadas no espaço", "Ventos solares em alta velocidade"], ans: 0 },
+        { q: "Qual experimento/detector detectou ondas gravitacionais pela primeira vez em 2015?", opts: ["LIGO (Interferômetro laser)", "Telescópio Hubble", "Acelerador LHC do CERN", "Sonda Voyager"], ans: 0 },
+        { q: "O que as ondas gravitacionais provocam ao atravessar a matéria?", opts: ["Deformações/variações minúsculas no comprimento do espaço-tempo", "Aumento instantâneo de massa do objeto", "Alteração da carga elétrica dos átomos", "Aumento da temperatura do vácuo"], ans: 0 },
+        { q: "Ondas gravitacionais são perturbações que se propagam em qual velocidade?", opts: ["Na velocidade da luz no vácuo", "Na velocidade do som na água", "Velocidade infinita e instantânea", "Velocidade do vento térmico"], ans: 0 },
+        { q: "Quanto tempo se passou entre a previsão teórica de Einstein e a detecção das ondas gravitacionais?", opts: ["Cerca de 100 anos (1 século)", "10 anos", "500 anos", "2 anos"], ans: 0 },
+        { q: "O evento detectado em 2015 envolveu a fusão de dois objetos de qual tipo?", opts: ["Buracos negros massivos", "Estrelas de prótons quentes", "Planetas rochosos frios", "Cometas de gelo"], ans: 0 }
+      ],
+      12: [
+        { q: "O que De Broglie propôs em 1924 sobre partículas quânticas como elétrons?", opts: ["Toda partícula em movimento possui uma onda associada", "Elétrons são apenas esferas rígidas sem comportamento ondulatório", "Ondas não podem transportar energia nem movimento", "A matéria não tem relação com ondas"], ans: 0 },
+        { q: "Como a hipótese de De Broglie sobre ondas de matéria foi confirmada experimentalmente?", opts: ["Experimentos de difração de elétrons", "Medindo a cor do fogo de madeira", "Pesando o elétron em balanças digitais", "Acelerando nêutrons na água"], ans: 0 },
+        { q: "O conceito de que entes quânticos mostram propriedades de onda e partícula chama-se:", opts: ["Dualidade onda-partícula", "Catástrofe magnética", "Teoria das cordas maciças", "Efeito fotoelétrico contínuo"], ans: 0 },
+        { q: "A equação de De Broglie relaciona o comprimento de onda λ com qual grandeza?", opts: ["Quantidade de movimento (momento p)", "Carga elétrica q", "Temperatura T em Kelvin", "Volume V da célula"], ans: 0 },
+        { q: "Partículas quânticas podem manifestar características ondulatórias ou corpusculares dependendo...", opts: ["Do experimento realizado para medi-las", "Da cor do laboratório", "Do horário do dia do teste", "Do peso do cientista"], ans: 0 },
+        { q: "Quando elétrons atravessam uma fenda dupla, o padrão observado na tela é característico de:", opts: ["Interferência ondulatória", "Colisão de bolinhas de gude", "Reflexão espelhada limpa", "Absorção total de calor"], ans: 0 }
+      ],
+      13: [
+        { q: "O Princípio de Incerteza de Heisenberg estabelece limites para medir simultaneamente...", opts: ["Posição e quantidade de movimento (momento)", "Massa e carga elétrica do núcleo", "Temperatura e volume do gás", "Cor e sabor da partícula"], ans: 0 },
+        { q: "O Princípio de Incerteza decorre de falhas nos aparelhos de medição?", opts: ["Não, é uma propriedade fundamental dos sistemas quânticos", "Sim, aparelhos do século XX eram ruins", "Sim, mas foi resolvido com lasers modernos", "Não, é apenas uma limitação dos olhos humanos"], ans: 0 },
+        { q: "A Mecânica Quântica permite prever o quê sobre medições microscópicas?", opts: ["Probabilidades de resultados", "Trajetórias clássicas perfeitas e exatas", "Nenhuma informação útil", "Apenas a velocidade final"], ans: 0 },
+        { q: "Quem desenvolveu a famosa equação de onda probabilística da mecânica quântica?", opts: ["Erwin Schrödinger", "Galileu Galilei", "James Clerk Maxwell", "Isaac Newton"], ans: 0 },
+        { q: "Dizer que não se pode determinar posição e momento exatos ao mesmo tempo é enunciado de quem?", opts: ["Werner Heisenberg", "Isaac Newton", "Wilhelm Röntgen", "Henri Becquerel"], ans: 0 },
+        { q: "O Princípio de Incerteza impede que uma partícula quântica possua simultaneamente:", opts: ["Trajetória clássica e momento perfeitamente definidos", "Massa e energia no vácuo", "Carga e espín magnético", "Tempo de vida e velocidade baixa"], ans: 0 }
+      ],
+      14: [
+        { q: "Como a equação relativística de Dirac (1928) previu o pósitron antes de ser observado?", opts: ["Admitia soluções matemáticas de partículas com mesma massa do elétron e carga oposta", "Previa que o elétron tinha carga nula", "Negava a existência da antimatéria no universo", "Convertia prótons em fótons de luz branca"], ans: 0 },
+        { q: "O pósitron é a antipartícula de qual componente do átomo?", opts: ["Do elétron", "Do próton", "Do nêutron", "Do neutrino"], ans: 0 },
+        { q: "O que ocorre quando uma partícula encontra sua respectiva antipartícula?", opts: ["Aniquilação mútua liberando energia/fótons", "Formam um átomo pesado estável", "Nada acontece, elas se repelem", "Aumentam de massa ao triplo"], ans: 0 },
+        { q: "A descoberta experimental do pósitron confirmou o poder preditivo de qual teoria?", opts: ["Mecânica Quântica Relativística de Dirac", "Termodinâmica Clássica de Carnot", "Gravitação de Kepler", "Eletrostática de Coulomb"], ans: 0 },
+        { q: "Teorias físicas bem fundamentadas podem prever o quê antes dos experimentos?", opts: ["Entidades e fenômenos ainda não observados", "Apenas fatos históricos do passado", "O preço de materiais metálicos no mercado", "A temperatura diária do planeta"], ans: 0 },
+        { q: "O pósitron possui a mesma massa do elétron, porém qual é a sua carga?", opts: ["Positiva (+1e)", "Negativa (-1e)", "Nula (0)", "Dupla positiva (+2e)"], ans: 0 }
+      ],
+      15: [
+        { q: "Qual a carga elétrica do pósitron?", opts: ["Positiva (+1e)", "Negativa (-1e)", "Neutramente nula", "Tripla negativa (-3e)"], ans: 0 },
+        { q: "Padrões de interferência em experimentos com elétrons provam qual natureza do elétron?", opts: ["Natureza ondulatória", "Natureza puramente gravítica", "Natureza estática rígida", "Natureza magnética maciça"], ans: 0 },
+        { q: "A mecânica quântica substitui trajetórias bem definidas por qual conceito?", opts: ["Estados probabilísticos e densidades de probabilidade", "Linhas retas infinitas", "Órbitas elípticas rígidas de aço", "Espirais de colisão contínua"], ans: 0 },
+        { q: "Se aumentarmos a precisão da medida da posição de uma partícula quântica, o que ocorre com a incerteza do seu momento?", opts: ["Aumenta", "Diminui a zero", "Permanece idêntica", "Inverte o sinal da carga"], ans: 0 },
+        { q: "Qual físico propôs que a mecânica quântica descrevia matrizes de observáveis (1925)?", opts: ["Heisenberg", "Einstein", "Becquerel", "Maxwell"], ans: 0 },
+        { q: "Ao tentar prever a posição de um elétron no espaço, a função de onda |Ψ|² fornece:", opts: ["A probabilidade de encontrar a partícula naquela região", "A velocidade exata em km/h", "A cor exata do elétron", "O peso exato em gramas"], ans: 0 }
+      ],
+      16: [
+        { q: "A descoberta do nêutron (Chadwick, 1932) explicou qual mistério do núcleo atômico?", opts: ["A massa do núcleo e sua estabilidade sem carga elétrica extra", "Por que os elétrons caem no núcleo", "A cor dos elementos radioativos no escuro", "A gravidade dos elétrons de valência"], ans: 0 },
+        { q: "Quem descobriu o nêutron em 1932?", opts: ["James Chadwick", "Carl Anderson", "Paul Dirac", "Niels Bohr"], ans: 0 },
+        { q: "O pósitron foi observado experimentalmente em raios cósmicos por quem em 1932?", opts: ["Carl Anderson", "Ernest Rutherford", "Enrico Fermi", "Max Planck"], ans: 0 },
+        { q: "A física nuclear estuda as interações que ocorrem em qual região do átomo?", opts: ["No núcleo atômico", "Na camada de valência externa", "No vácuo ao redor do átomo", "Apenas na superfície dos metais"], ans: 0 },
+        { q: "Quais são os dois nucleons principais que compõem o núcleo atômico?", opts: ["Prótons e nêutrons", "Elétrons e pósitrons", "Quarks e fótons", "Léptons e neutrinos"], ans: 0 },
+        { q: "Qual das partículas nucleares possui massa semelhante ao próton, mas sem carga elétrica?", opts: ["Nêutron", "Elétron", "Fóton", "Pósitron"], ans: 0 }
+      ],
+      17: [
+        { q: "O que caracteriza a reação de fissão nuclear (1938)?", opts: ["Divisão de um núcleo pesado em núcleos menores liberando grande energia", "União de dois núcleos leves formando hélio", "Destruição total dos elétrons de valência", "Aniquilação da gravidade atômica"], ans: 0 },
+        { q: "A tecnologia de fissão nuclear possui dupla aplicação para a sociedade:", opts: ["Armas destrutivas e geração de energia/medicina nuclear", "Transporte aéreo e telegrafia sem fio", "Combustível de carros elétricos e baterias AA", "Iluminação de lâmpadas incandescentes"], ans: 0 },
+        { q: "O desenvolvimento do primeiro reator nuclear (1942) é associado a qual equipe/físico?", opts: ["Enrico Fermi e colaboradores", "Isaac Newton e Galileu", "Maxwell e Hertz", "Albert Einstein e Lorentz"], ans: 0 },
+        { q: "Decisões sobre tecnologia nuclear envolvem obrigatoriamente debates de...", opts: ["Ética, segurança, política e impacto ambiental", "Apenas lucro econômico das indústrias", "Geometria pura sem reflexão social", "Mecânica de motores a vapor"], ans: 0 },
+        { q: "Fissão de Urânio-235 liberada em cadeia é a base para o funcionamento de quê?", opts: ["Usinas nucleares e bombas atômicas", "Lâmpadas fluorescentes de casa", "Motores de combustão a gasolina", "Paineis solares fotovoltaicos"], ans: 0 },
+        { q: "A quebra de um núcleo pesado por absorção de um nêutron gerando nêutrons extras chama-se:", opts: ["Reação em cadeia de fissão", "Aniquilação de pósitrons", "Fusão termonuclear solar", "Efeito fotoelétrico induzido"], ans: 0 }
+      ],
+      18: [
+        { q: "Como a Eletrodinâmica Quântica (QED, 1948) descreve a força eletromagnética?", opts: ["Interação por troca de quanta do campo (fótons)", "Atração por cordas de massa nula", "Pressão por partículas de neutrinos", "Gravidade quântica de repulsão"], ans: 0 },
+        { q: "Qual partícula é o mediador/quantum da força eletromagnética na QED?", opts: ["Fóton", "Bóson W", "Glúon", "Gravíton"], ans: 0 },
+        { q: "Quais partículas elementares formam prótons e nêutrons no Modelo Padrão (1964)?", opts: ["Quarks", "Léptons", "Bósons Higgs", "Mesons"], ans: 0 },
+        { q: "Quantos quarks formam um próton ou um nêutron?", opts: ["3 Quarks", "2 Quarks", "10 Quarks", "1 Quark central"], ans: 0 },
+        { q: "Quarks e léptons são classificados no Modelo Padrão como...", opts: ["Partículas elementares (sem estrutura interna conhecida)", "Moléculas complexas de carbono", "Núcleos compostos de água", "Fótons comprimidos"], ans: 0 },
+        { q: "Na Eletrodinâmica Quântica, duas cargas elétricas interagem trocando qual partícula virtual?", opts: ["Fótons", "Glúons", "Bósons Z", "Quarks up"], ans: 0 }
+      ],
+      19: [
+        { q: "O Modelo Padrão organiza a matéria em duas grandes famílias de partículas de matéria:", opts: ["Quarks e Léptons", "Prótons e Moléculas", "Raios e Fótons", "Nêutrons e Átomos"], ans: 0 },
+        { q: "Qual força fundamental NÃO está incorporada no Modelo Padrão atual?", opts: ["Gravidade", "Força Eletromagnética", "Interação Forte", "Interação Fraca"], ans: 0 },
+        { q: "Quais são as partículas mediadoras da força forte que mantêm os quarks unidos?", opts: ["Glúons", "Fótons", "Bósons Z", "Gravítons"], ans: 0 },
+        { q: "O elétron e os neutrinos pertencem a qual família de partículas elementares?", opts: ["Léptons", "Quarks", "Bósons de Higgs", "Baryons"], ans: 0 },
+        { q: "Quantas forças/interações fundamentais a física reconhece atualmente?", opts: ["4 (Eletromagnética, Fraca, Forte e Gravidade)", "2 (Elétrica e Mecânica)", "10 forças espaciais", "1 força universal"], ans: 0 },
+        { q: "Os neutrinos são léptons caracterizados por possuírem:", opts: ["Carga elétrica nula e massa extremamente pequena", "Carga positiva +2e e grande massa", "Cor visível sob luz branca", "Massa infinita no vácuo"], ans: 0 }
+      ],
+      20: [
+        { q: "Como grandes experimentos testam as previsões do Modelo Padrão?", opts: ["Colidindo partículas em aceleradores (LHC) e analisando dados nos detectores", "Observando tubos de ensaio quimicamente", "Usando microscópios ópticos convencionais", "Pesando rochas em balanças digitais"], ans: 0 },
+        { q: "Qual partícula descoberta em 2012 no CERN confirmou o mecanismo de massa das partículas?", opts: ["Bóson de Higgs", "Quark Top", "Pósitron", "Neutrino do Tau"], ans: 0 },
+        { q: "O maior acelerador de partículas do mundo onde se detectou o Bóson de Higgs é o:", opts: ["LHC (Large Hadron Collider)", "Telescópio James Webb", "LIGO", "Observatório de Arecibo"], ans: 0 },
+        { q: "Grandes descobertas na física de partículas moderna exigem...", opts: ["Grandes colaborações internacionais de cientistas", "Apenas um pesquisador trabalhando isolado", "Equipamentos do século XIX", "Medições sem uso de computadores"], ans: 0 },
+        { q: "O Bóson de Higgs foi identificado através do registro de quê nos detectores?", opts: ["Assinaturas de decaimento de produtos de colisão", "Brilho visível azul na sala", "Aumento de peso do acelerador", "Sinais de rádio de áudio"], ans: 0 },
+        { q: "Os aceleradores elevam partículas a altas energias para:", opts: ["Promover colisões e criar/observar novas partículas", "Destruir a gravidade do laboratório", "Resfriar os átomos ao zero absoluto", "Gerar energia elétrica gratuita para as cidades"], ans: 0 }
+      ],
+      21: [
+        { q: "Por que as propriedades dos materiais mudam na escala nanométrica (1 a 100 nm)?", opts: ["Elevada razão área superficial/volume e manifestação de efeitos quânticos", "Porque o material perde todos os seus átomos", "Pela ação do vento sobre os nanomateriais", "Porque a gravidade do objeto desaparece"], ans: 0 },
+        { q: "Nanotecnologia refere-se à manipulação da matéria em qual escala de grandeza?", opts: ["1 a 100 nanômetros", "1 a 100 metros", "Milímetros de espessura", "Quilômetros de extensão"], ans: 0 },
+        { q: "A mudança de propriedades em nanoescala permite aplicações em quais áreas?", opts: ["Medicina, sensores, eletrônica e novos materiais", "Apenas viagens no tempo", "Apenas pintura de paredes antigas", "Combustível para fogões a gás"], ans: 0 },
+        { q: "Um material em nanoescala pode mudar de cor ou condução elétrica em relação ao seu estado macroscópico?", opts: ["Sim, devido aos efeitos de confinamento quântico e área superficial", "Não, as propriedades são sempre exatamente idênticas", "Não, a cor depende apenas do peso do objeto", "Sim, mas apenas se for aquecido a mil graus"], ans: 0 },
+        { q: "O que acontece com a razão entre área superficial e volume à medida que reduzimos uma partícula para tamanho nano?", opts: ["A razão área/volume aumenta drasticamente", "A razão diminui a zero", "A área desaparece completamente", "O volume fica maior que a área"], ans: 0 },
+        { q: "Em nanoescala, nanopartículas de ouro podem apresentar cores diferentes do dourado macroscópico devido a:", opts: ["Efeitos quânticos e ressonância plasmônica de superfície", "Queima dos elétrons pelo ar", "Presença de mofo invisível", "Desintegração dos nêutrons"], ans: 0 }
+      ],
+      22: [
+        { q: "O que ocorre no Condensado de Bose-Einstein (1995)?", opts: ["Átomos bosônicos em baixíssimas temperaturas ocupam o mesmo estado quântico", "Átomos explodem devido ao excesso de calor", "Os elétrons transformam-se em nêutrons", "O gás transforma-se em plasma estelar"], ans: 0 },
+        { q: "Em que faixa de temperatura o Condensado de Bose-Einstein é obtido?", opts: ["Próximo ao Zero Absoluto (nanokelvins)", "A 100 graus Celsius", "À temperatura ambiente de 25°C", "No interior do Sol"], ans: 0 },
+        { q: "No Condensado de Bose-Einstein, o conjunto de átomos passa a ser descrito por:", opts: ["Uma única função de onda macroscópica", "Milhões de equações de Newton isoladas", "Leis da mecânica clássica de fluido", "Equações de pressão de gases ideais"], ans: 0 },
+        { q: "O Condensado de Bose-Einstein torna observável o quê em escala macroscópica?", opts: ["Efeitos e comportamentos quânticos", "A gravidade dos planetas", "A fusão de galáxias", "O movimento de elétrons a olho nu"], ans: 0 },
+        { q: "A existência do condensado foi prevista teoricamente décadas antes por quais dois físicos?", opts: ["Satyendra Nath Bose e Albert Einstein", "Maxwell e Hertz", "Röntgen e Chadwick", "Dirac e Heisenberg"], ans: 0 },
+        { q: "No condensado, como os átomos se comportam coletivamente?", opts: ["Como uma 'superpartícula' coordenada descrita pela mesma onda", "Colidindo desordenadamente como gás quente", "Fixos em cristal sólido rígido", "Desintegrando seus núcleos"], ans: 0 }
+      ],
+      23: [
+        { q: "Parabéns por chegar à Chegada! A física moderna nos ensina que a matéria em sua menor escala é...", opts: ["Descrevível por campos e leis quânticas e probabilísticas", "Formada por esferas de bilhar totalmente rígidas", "Impossível de ser estudada experimentalmente", "Uma ilusão sem nenhuma lei matemática"], ans: 0 },
+        { q: "A transição da Física Clássica para a Física Moderna ocorreu principalmente no início de qual século?", opts: ["Século XX", "Século XV", "Século XVIII", "Século XII"], ans: 0 },
+        { q: "Qual a importância da unificação de teorias na Física?", opts: ["Permite explicar diversos fenômenos sob princípios fundamentais comuns", "Serve apenas para complicar livros didáticos", "Evita o uso de experimentos em laboratórios", "Proíbe novas descobertas na ciência"], ans: 0 },
+        { q: "A evolução da física atômica e quântica impulsionou quais tecnologias do nosso dia a dia?", opts: ["Computadores, lasers, LEDs e exames de ressonância médica", "Carruagens a cavalo e moinhos de vento", "Telegrafo de fogo manual", "Velas de cera e lâmpadas a óleo"], ans: 0 },
+        { q: "Ao final deste percurso, qual a principal atitude do cientista frente aos limites de uma teoria?", opts: ["Propor novas hipóteses e modelos testáveis por experimentos", "Desistir da ciência e ignorar o resultado", "Alterar os dados para caberem na teoria velha", "Destruir os laboratórios"], ans: 0 },
+        { q: "A física contemporânea continua aberta a novas descobertas porque ainda busca unificar:", opts: ["Mecânica Quântica e Relatividade Geral (Gravidade Quântica)", "Termodinâmica e Álgebra Simples", "Óptica Geométrica e Som", "Química Orgânica e Astrologia"], ans: 0 }
+      ]
+    };
+
+    let players = [];
+    let currentPlayerIndex = 0;
+    let pendingRoll = 0;
+    let pendingTargetTile = 0;
+    const playerColors = ['p1', 'p2', 'p3', 'p4', 'p5'];
+
+    function renderNameInputs() {
+      const num = parseInt(document.getElementById('num-players').value);
+      const container = document.getElementById('player-inputs-container');
+      container.innerHTML = '';
+
+      for (let i = 0; i < num; i++) {
+        const div = document.createElement('div');
+        div.className = 'player-input-item';
+        div.innerHTML = `
+          <div class="pin ${playerColors[i]}"></div>
+          <input type="text" id="input-player-${i}" value="Jogador ${i + 1}" placeholder="Nome do Jogador ${i + 1}">
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    function startGame() {
+      const num = parseInt(document.getElementById('num-players').value);
+      players = [];
+
+      for (let i = 0; i < num; i++) {
+        const nameInput = document.getElementById(`input-player-${i}`).value.trim();
+        players.push({
+          id: i,
+          name: nameInput || `Jogador ${i + 1}`,
+          colorClass: playerColors[i],
+          position: 0,
+          skipNextTurn: false,
+          eliminated: false
+        });
+      }
+
+      document.getElementById('setup-screen').style.display = 'none';
+      document.getElementById('game-layout').style.display = 'flex';
+
+      buildBoard();
+      updateUI();
+    }
+
+    function buildBoard() {
+      const boardContainer = document.getElementById('board-container');
+      boardContainer.innerHTML = '';
+
+      boardLayout.forEach((tile) => {
+        const tileDiv = document.createElement('div');
+        tileDiv.className = `tile ${tile.eClass} ${tile.type}`;
+        tileDiv.id = `tile-${tile.id}`;
+        
+        tileDiv.style.gridRow = tile.row + 1;
+        tileDiv.style.gridColumn = tile.col + 1;
+
+        const iconSymbol = ICONES_FISICA[tile.id] || "⚛️";
+
+        tileDiv.innerHTML = `
+          <div class="tile-number">#${tile.id}</div>
+          <div class="tile-label">${tile.label}</div>
+          <div class="physics-icon">${iconSymbol}</div>
+          <div class="pin-container" id="pins-${tile.id}"></div>
+        `;
+        boardContainer.appendChild(tileDiv);
+      });
+
+      renderPins();
+    }
+
+    function renderPins() {
+      boardLayout.forEach(tile => {
+        const pinCont = document.getElementById(`pins-${tile.id}`);
+        if (pinCont) pinCont.innerHTML = '';
+      });
+
+      players.forEach(p => {
+        if (!p.eliminated) {
+          const pinCont = document.getElementById(`pins-${p.position}`);
+          if (pinCont) {
+            const pin = document.createElement('div');
+            pin.className = `pin ${p.colorClass} ${p.position === 23 ? 'winner-anim' : ''}`;
+            pin.title = p.name;
+            pinCont.appendChild(pin);
+          }
+        }
+      });
+    }
+
+    function updateUI() {
+      renderPins();
+
+      const listDiv = document.getElementById('player-list-display');
+      listDiv.innerHTML = '';
+
+      players.forEach((p, idx) => {
+        const item = document.createElement('div');
+        let status = p.eliminated ? ' (Eliminado)' : (p.skipNextTurn ? ' (Parado)' : '');
+        item.className = `player-item ${idx === currentPlayerIndex ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}`;
+        item.innerHTML = `
+          <div class="pin ${p.colorClass}"></div>
+          <span>${p.name} ${status} - Casa #${p.position}</span>
+        `;
+        listDiv.appendChild(item);
+      });
+
+      const current = players[currentPlayerIndex];
+      document.getElementById('current-player-name').innerText = current.name;
+    }
+
+    function rollDice() {
+      const player = players[currentPlayerIndex];
+
+      if (player.skipNextTurn) {
+        alert(`${player.name} perdeu a vez nesta rodada por ter caído na casa de descanso!`);
+        player.skipNextTurn = false;
+        nextTurn();
+        return;
+      }
+
+      const rollBtn = document.getElementById('roll-btn');
+      const diceDisplay = document.getElementById('dice-result');
+      rollBtn.disabled = true;
+
+      diceDisplay.classList.add('rolling');
+      
+      let animationTimer = setInterval(() => {
+        diceDisplay.innerText = Math.floor(Math.random() * 3) + 1;
+      }, 100);
+
+      setTimeout(() => {
+        clearInterval(animationTimer);
+        diceDisplay.classList.remove('rolling');
+
+        const dice = Math.floor(Math.random() * 3) + 1;
+        pendingRoll = dice;
+        diceDisplay.innerText = `🎲 ${dice}`;
+
+        pendingTargetTile = Math.min(player.position + dice, boardLayout.length - 1);
+        
+        clearTileHighlights();
+        const targetDiv = document.getElementById(`tile-${pendingTargetTile}`);
+        if (targetDiv) {
+          targetDiv.classList.add('tile-target');
+        }
+
+        showQuestionForTile(pendingTargetTile);
+      }, 2000);
+    }
+
+    function clearTileHighlights() {
+      document.querySelectorAll('.tile-target').forEach(el => {
+        el.classList.remove('tile-target');
+      });
+    }
+
+    function showQuestionForTile(tileId) {
+      const tile = boardLayout.find(t => t.id === tileId);
+      const questionsQueue = questionsByTile[tileId];
+      
+      const currentQuestion = questionsQueue.shift();
+      questionsQueue.push(currentQuestion);
+
+      const etapaNome = NOMES_ETAPAS[tile.etapaNum];
+      document.getElementById('question-etapa').innerText = `${etapaNome.toUpperCase()} (CASA #${tileId})`;
+      document.getElementById('question-text').innerText = currentQuestion.q;
+
+      const optsContainer = document.getElementById('options-container');
+      optsContainer.innerHTML = '';
+
+      const letters = ['A', 'B', 'C', 'D'];
+      currentQuestion.opts.forEach((optText, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = `${letters[i]}) ${optText}`;
+        btn.onclick = () => answerQuestion(i === currentQuestion.ans);
+        optsContainer.appendChild(btn);
+      });
+
+      document.getElementById('question-card').style.display = 'block';
+    }
+
+    function answerQuestion(isCorrect) {
+      document.getElementById('question-card').style.display = 'none';
+      clearTileHighlights();
+      const player = players[currentPlayerIndex];
+
+      if (isCorrect) {
+        alert(`✨ Resposta CORRETA! ${player.name} avança ${pendingRoll} casa(s).`);
+        player.position = pendingTargetTile;
+        applyTileEffect(player);
+      } else {
+        alert(`❌ Resposta INCORRETA! ${player.name} errou e permanece na Casa #${player.position}.`);
+        nextTurn();
+      }
+    }
+
+    function applyTileEffect(player) {
+      const currentTile = boardLayout.find(t => t.id === player.position);
+
+      setTimeout(() => {
+        if (currentTile.type === 'blackhole') {
+          alert(`🕳️ BURACO NEGRO! ${player.name} caiu no Buraco Negro da casa #${player.position} e foi ELIMINADO!`);
+          player.eliminated = true;
+        } else if (currentTile.type === 'wait') {
+          alert(`⏸️ ${player.name} caiu na casa de descanso e ficará 1 rodada sem jogar.`);
+          player.skipNextTurn = true;
+        } else if (currentTile.type === 'back') {
+          alert(`⬅️ ${player.name} caiu no desvio e recuou 2 casas.`);
+          player.position = Math.max(0, player.position - 2);
+        } else if (currentTile.type === 'finish') {
+          updateUI();
+          document.getElementById('winner-title').innerText = `🏆 ${player.name.toUpperCase()} VENCEU!`;
+          document.getElementById('victory-modal').style.display = 'flex';
+          document.getElementById('roll-btn').disabled = true;
+          return;
+        }
+
+        nextTurn();
+      }, 400);
+    }
+
+    function nextTurn() {
+      const activePlayers = players.filter(p => !p.eliminated);
+      if (activePlayers.length === 0) {
+        alert("💥 Todos os jogadores foram engolidos por Buracos Negros! Fim de partida.");
+        document.getElementById('roll-btn').disabled = true;
+        return;
+      }
+
+      do {
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+      } while (players[currentPlayerIndex].eliminated);
+
+      document.getElementById('roll-btn').disabled = false;
+      document.getElementById('dice-result').innerText = '🎲';
+      updateUI();
+    }
+
+    renderNameInputs();
+  </script>
+</body>
+</html>
